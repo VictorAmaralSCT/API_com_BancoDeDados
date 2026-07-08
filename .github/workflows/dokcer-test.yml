@@ -19,11 +19,27 @@ jobs:
       - name: Rodar container
         run: docker run -d --name api-tarefas-container -p 5000:5000 api-tarefas
 
-      - name: Aguardar API iniciar
-        run: sleep 5
+      - name: Ver containers
+        run: docker ps -a
 
-      - name: Testar GET /tarefas
-        run: curl http://localhost:5000/tarefas
+      - name: Ver logs iniciais
+        run: docker logs api-tarefas-container
+
+      - name: Aguardar API iniciar
+        run: |
+          for i in {1..10}; do
+            echo "Tentativa $i..."
+            if curl http://localhost:5000/tarefas; then
+              echo "API respondeu com sucesso!"
+              exit 0
+            fi
+            echo "API ainda não respondeu. Aguardando..."
+            docker ps -a
+            docker logs api-tarefas-container
+            sleep 3
+          done
+          echo "API não respondeu depois de várias tentativas."
+          exit 1
 
       - name: Testar POST /tarefas
         run: |
@@ -34,7 +50,7 @@ jobs:
       - name: Testar GET novamente
         run: curl http://localhost:5000/tarefas
 
-      - name: Ver logs do container
+      - name: Ver logs finais
         if: always()
         run: docker logs api-tarefas-container
 
