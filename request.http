@@ -1,0 +1,11 @@
+POST localhost:5000/tarefas
+Content-Type: application/json
+
+{
+  "titulo": "Inserindo terceira tarefa",
+  "descricao": "Tarefa inserida no banco",
+  "concluida": false
+}
+
+###
+DELETE localhost:5000/tarefas/3
