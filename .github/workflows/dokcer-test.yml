@@ -1,0 +1,59 @@
+name: Testar Dockerfile da API
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  testar-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Construir imagem Docker
+        run: docker build -t api-tarefas .
+
+      - name: Rodar container
+        run: docker run -d --name api-tarefas-container -p 5000:5000 api-tarefas
+
+      - name: Ver containers
+        run: docker ps -a
+
+      - name: Ver logs iniciais
+        run: docker logs api-tarefas-container
+
+      - name: Aguardar API iniciar
+        run: |
+          for i in {1..10}; do
+            echo "Tentativa $i..."
+            if curl http://localhost:5000/tarefas; then
+              echo "API respondeu com sucesso!"
+              exit 0
+            fi
+            echo "API ainda não respondeu. Aguardando..."
+            docker ps -a
+            docker logs api-tarefas-container
+            sleep 3
+          done
+          echo "API não respondeu depois de várias tentativas."
+          exit 1
+
+      - name: Testar POST /tarefas
+        run: |
+          curl -X POST http://localhost:5000/tarefas \
+            -H "Content-Type: application/json" \
+            -d '{"titulo":"Tarefa via GitHub Actions","descricao":"Testando API em container","concluida":false}'
+
+      - name: Testar GET novamente
+        run: curl http://localhost:5000/tarefas
+
+      - name: Ver logs finais
+        if: always()
+        run: docker logs api-tarefas-container
+
+      - name: Parar container
+        if: always()
+        run: docker stop api-tarefas-container
